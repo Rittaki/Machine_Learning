@@ -3,12 +3,12 @@ import sys
 import random
 
 def knn(train_x, train_y, x_test):
-    k = 10 # change later
+    k = 7 # change later
     classes = [0, 0, 0]
     distances = []
-    distances = [np.linalg.norm(x_test - x_i) for x_i in train_x]
-    sorted_dist = sorted(distances)
-    k_distances = sorted_dist[: k]
+    for x_i in train_x:
+        distances.append(np.linalg.norm(x_test - x_i))
+    k_distances = sorted(distances)[: k]
     k_neighbours = []
     for dist in k_distances:
         k_neighbours.append(train_x[distances.index(dist)])
@@ -19,12 +19,11 @@ def knn(train_x, train_y, x_test):
 
 def passive_aggressive(train_x, train_y):
     epochs = 50 # change later
-    weights = np.zeros((3, train_x.shape[1]))
+    bias = np.ones((len(train_x), 1))
+    train_newx = np.append(train_x, bias, axis=1)
+    weights = np.zeros((3, train_newx.shape[1]))
     for t in range(epochs):
-        # shuffled = list(zip(train_x, train_y))
-        # np.random.shuffle(shuffled)
-        # x, y = zip(*shuffled)
-        for x_i, y_i in zip(train_x, train_y):
+        for x_i, y_i in zip(train_newx, train_y):
             y_hat = np.argmax(np.dot(weights, x_i))
             if y_hat != int(y_i):
                 loss = max(0, 1 - np.dot(weights[int(y_i)], x_i) + np.dot(weights[y_hat], x_i))
@@ -37,11 +36,13 @@ def passive_aggressive(train_x, train_y):
 
 def svm(train_x, train_y):
     eta = 0.01 # change later
-    lamda = 0.1
+    lamda = 0.01
     epochs = 50
-    weights = np.zeros((3, train_x.shape[1]))
+    bias = np.ones((len(train_x), 1))
+    train_newx = np.append(train_x, bias, axis=1)
+    weights = np.zeros((3, train_newx.shape[1]))
     for t in range(epochs):
-        for x_i, y_i in zip(train_x, train_y):
+        for x_i, y_i in zip(train_newx, train_y):
             y_hat = np.argmax(np.dot(weights, x_i))
             if y_hat != int(y_i):
                 weights[int(y_i), :] = (1 - eta * lamda) * weights[int(y_i), :] + eta * x_i
@@ -54,12 +55,11 @@ def svm(train_x, train_y):
 def perceptron(train_x, train_y):
     eta = 0.1 # change later
     epochs = 50 # change later
-    weights = np.zeros((3, train_x.shape[1]))
+    bias = np.ones((len(train_x), 1))
+    train_newx = np.append(train_x, bias, axis=1)
+    weights = np.zeros((3, train_newx.shape[1]))
     for t in range(epochs):
-        # shuffled = list(zip(train_x, train_y))
-        # np.random.shuffle(shuffled)
-        # x, y = zip(*shuffled)
-        for x_i, y_i in zip(train_x, train_y):
+        for x_i, y_i in zip(train_newx, train_y):
             y_hat = np.argmax(np.dot(weights, x_i))
             if y_hat != int(y_i):
                 weights[int(y_i), :] = weights[int(y_i), :] + eta * x_i
@@ -85,15 +85,16 @@ def z_score(examples):
 
 def test(test_examples, pa_weights, per_weights, svm_weights, out, train_x, train_y, test_for_knn):
     # number of tests
+    bias = np.ones((len(test_examples), 1))
+    test_examples_new = np.append(test_examples, bias, axis=1)
     m = test_examples.shape[0]
-    z_score(test_examples)
+    z_score(test_examples_new)
     for i in range(m):
         knn_yhat = knn(train_x, train_y, test_for_knn[i])
-        perceptron_yhat = np.argmax(np.dot(per_weights, test_examples[i]))
-        pa_yhat = np.argmax(np.dot(pa_weights, test_examples[i]))
-        svm_yhat = np.argmax(np.dot(svm_weights, test_examples[i]))
+        perceptron_yhat = np.argmax(np.dot(per_weights, test_examples_new[i]))
+        pa_yhat = np.argmax(np.dot(pa_weights, test_examples_new[i]))
+        svm_yhat = np.argmax(np.dot(svm_weights, test_examples_new[i]))
         out.write(f"knn: {knn_yhat}, perceptron: {perceptron_yhat}, svm: {svm_yhat}, pa: {pa_yhat}\n")
-        # out.write(f"perceptron: {perceptron_yhat}, svm: {svm_yhat}, pa: {pa_yhat}\n")
 
 def main():
     train_x_path, train_y_path, test_x_path, out_file = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
@@ -105,14 +106,13 @@ def main():
     train_y_for_knn = train_y.copy()
     test_x_for_knn = test_x.copy()
     # minmax(train_x)
+    # minmax(test_x)
     z_score(train_x)
     z_score(test_x)
     perceptron_weights = perceptron(train_x, train_y)
     pa_weights = passive_aggressive(train_x, train_y)
     svm_weights = svm(train_x, train_y)
-    # knn_weights = knn(train_x, train_y, test_x)
     test(test_x, pa_weights, perceptron_weights, svm_weights, out, train_x_for_knn, train_y_for_knn, test_x_for_knn)
-    print("Rita")
 
 if __name__ == '__main__':
     main()
