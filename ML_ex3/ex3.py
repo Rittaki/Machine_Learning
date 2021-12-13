@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+
 # from scipy.special import softmax
 import matplotlib.pyplot as plt
 
@@ -14,12 +15,10 @@ def softmax(Z):
     return np.exp(Z) / sum(np.exp(Z))
 
 def loss_func(h2, y):
-    vec = np.zeros((10, 1))
-    vec[int(y)] = 1
-    res = np.sum(-vec * np.log(h2))
-    return res
+    epsilon = 1e-6
+    return -np.log(h2[int(y)] + epsilon)
 
-def fprop(W1, b1, W2, b2, x):
+def fprop(W1, b1, W2, b2, x, y):
     # Follows procedure given in notes
     z1 = np.dot(W1, x) + b1
     h1 = sigmoid(z1)
@@ -54,10 +53,12 @@ def one_hot(Y):
     return one_hot_y
 
 def parameters():
-    W1 = np.random.rand(10, 784) - 0.5
-    b1 = np.random.rand(10, 1) - 0.5
-    W2 = np.random.rand(10, 10) - 0.5
-    b2 = np.random.rand(10, 1) - 0.5
+    W1 = np.random.rand(100, 784) - 0.5
+    # b1 = np.random.rand(15, 1) - 0.5
+    b1 = np.zeros([100, 1], dtype=float)
+    W2 = np.random.rand(10, 100) - 0.5
+    # b2 = np.random.rand(10, 1) - 0.5
+    b2 = np.zeros([10, 1], dtype=float)
     params = {'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2}
     return W1, b1, W2, b2
 
@@ -67,6 +68,20 @@ def get_predictions(h2):
 def get_accuracy(predictions, Y):
     print(predictions, Y)
     return np.sum(predictions == Y) / Y.size
+
+def test(test_x, W1, b1, W2, b2):
+    open_test_y = open("test_y", "a")
+    for x in test_x:
+        z1 = np.dot(W1, np.array([x]).T) + b1
+        h1 = sigmoid(z1)
+        z2 = np.dot(W2, h1) + b2
+        h2 = softmax(z2)
+        y_predictions = str(np.argmax(h2))
+        open_test_y.write(f"{y_predictions}\n")
+    open_test_y.close()
+    # test_y = np.loadtxt('test_y')
+    # predictions = get_predictions(h2)
+    # print(get_accuracy(predictions, test_y))
 
 if __name__ == '__main__':
     train_x = np.loadtxt(sys.argv[1])
@@ -83,21 +98,26 @@ if __name__ == '__main__':
     train_y = data[0]
     train_y = train_y.reshape(1, -1).astype(int)
     train_x = data[1:n]
+    test_x = test_x
 
+    # norm_train_x = train_x / 255
+    # norm_test_x = test_x / 255
     norm = 0.99 / 255
     norm_train_x = train_x * norm + 0.01
-    # norm_test_x = test_x * norm + 0.01
+    norm_test_x = test_x * norm + 0.01
 
     W1, b1, W2, b2 = parameters()
     for i in range(500):
-        Z1, h1, Z2, h2  = fprop(W1, b1, W2, b2, norm_train_x)
+        # for x, y in zip(norm_train_x.T, train_y):
+        Z1, h1, Z2, h2  = fprop(W1, b1, W2, b2, norm_train_x, train_y)
         dW1, db1, dW2, db2 = bprop(Z1, h1, Z2, h2, W1, W2, norm_train_x, train_y)
-        W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, 0.1)
-        if i % 5 == 0:
+        W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, 0.3)
+        if i % 10 == 0:
             print("Iteration: ", i)
             predictions = get_predictions(h2)
             print(get_accuracy(predictions, train_y))
 
+    test(norm_test_x, W1, b1, W2, b2)
     # image_index = 50000 # You may select anything up to 50000
     # print(train_y[image_index])
     # plt.imshow(train_x[image_index].reshape(28, -1), cmap='gray')
