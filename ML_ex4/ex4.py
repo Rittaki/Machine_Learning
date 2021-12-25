@@ -329,17 +329,20 @@ def main():
     train_accuracy_list = list()
     valid_loss_list = list()
     valid_accuracy_list = list()
-
-    for epoch in range(1, 30 + 1):
-        loss, accuracy = train(epoch, model, train_loader, optimizer_adam)
-        train_loss_list.append(loss)
-        train_accuracy_list.append(accuracy)
-        valid_loss, valid_accuracy = valid(model, valid_loader)
-        valid_loss_list.append(valid_loss)
-        valid_accuracy_list.append(valid_accuracy)
-
-        test_orig(model, orig_test_loader)
-
+    # accuracy_test = 0
+    #
+    # for epoch in range(1, 100 + 1):
+    #     loss, accuracy = train(epoch, model, train_loader, optimizer_adam)
+    #     train_loss_list.append(loss)
+    #     train_accuracy_list.append(accuracy)
+    #     valid_loss, valid_accuracy = valid(model, valid_loader)
+    #     valid_loss_list.append(valid_loss)
+    #     valid_accuracy_list.append(valid_accuracy)
+    #
+    #     accuracy_test = test_orig(model, orig_test_loader, accuracy_test)
+    # print('\nBiggest accuracy of test: {}\n'.format(accuracy_test))
+    # torch.save(model.state_dict(), 'weights_only.pth')
+    model.load_state_dict(torch.load('weights_only_4499.pth'))
     prediction = test(model, test_loader)
 
     draw_loss(train_loss_list, valid_loss_list)
@@ -395,7 +398,7 @@ def test(model, test_loader):
         test_y_list.append(str(int(predict)))
     return test_y_list
 
-def test_orig(model, test_loader):
+def test_orig(model, test_loader, accuracy_test):
     prediction_list = []
     model.eval()
     test_loss = 0
@@ -407,10 +410,14 @@ def test_orig(model, test_loader):
             prediction = output.max(1, keepdim=True)[1]
             prediction_list.append(prediction)
             accuracy_counter += prediction.eq(target.view_as(prediction)).cpu().sum()
+    # if accuracy_test < accuracy_counter:
+    #     accuracy_test = accuracy_counter
+    #     torch.save(model.state_dict(), 'weights_only.pth')
 
     test_loss /= len(test_loader.dataset)
     print('\nTest Set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, accuracy_counter, len(test_loader.dataset), 100. * accuracy_counter / len(test_loader.dataset)))
+    # return accuracy_test
 
 def write_to_file(predict_y):
     with open('test_y', 'w') as file:
