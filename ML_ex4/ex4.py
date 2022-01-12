@@ -178,17 +178,11 @@ def main():
     train_data = MyData(x_data, y_data, transforms)
     validation_data = MyData(x_val, y_val, transforms)
     test_data = MyData(test_x, None, transforms)
-    test_set_orig = torchvision.datasets.FashionMNIST(root='./data',
-                                                 train=False,
-                                                 download=True,
-                                                 transform=transforms)
 
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=64, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(validation_data, batch_size=64, shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_data)
-    orig_test_loader = torch.utils.data.DataLoader(test_set_orig,
-                                              batch_size=64,
-                                              shuffle=False)
+
     """
     lr = 0.1
     model_a = ModelA(image_size=28*28)
@@ -206,8 +200,6 @@ def main():
         valid_loss, valid_accuracy = valid(model_a, valid_loader)
         valid_loss_list.append(valid_loss)
         valid_accuracy_list.append(valid_accuracy)
-
-        test_orig(model_a, orig_test_loader)
 
     prediction = test(model_a, test_loader)
     """
@@ -229,8 +221,6 @@ def main():
         valid_loss_list.append(valid_loss)
         valid_accuracy_list.append(valid_accuracy)
 
-        test_orig(model_b, orig_test_loader)
-
     prediction = test(model_b, test_loader)
     """
     """
@@ -250,8 +240,6 @@ def main():
         valid_loss, valid_accuracy = valid(model_c, valid_loader)
         valid_loss_list.append(valid_loss)
         valid_accuracy_list.append(valid_accuracy)
-
-        test_orig(model_c, orig_test_loader)
 
     prediction = test(model_c, test_loader)
     """
@@ -273,8 +261,6 @@ def main():
         valid_loss_list.append(valid_loss)
         valid_accuracy_list.append(valid_accuracy)
 
-        test_orig(model_d, orig_test_loader)
-
     prediction = test(model_d, test_loader)
     """
     """
@@ -294,8 +280,6 @@ def main():
         valid_loss, valid_accuracy = valid(model_e, valid_loader)
         valid_loss_list.append(valid_loss)
         valid_accuracy_list.append(valid_accuracy)
-
-        test_orig(model_e, orig_test_loader)
 
     prediction = test(model_e, test_loader)
     """
@@ -317,8 +301,6 @@ def main():
         valid_loss_list.append(valid_loss)
         valid_accuracy_list.append(valid_accuracy)
 
-        test_orig(model_f, orig_test_loader)
-
     prediction = test(model_f, test_loader)
     """
     lr = 0.002
@@ -329,27 +311,19 @@ def main():
     train_accuracy_list = list()
     valid_loss_list = list()
     valid_accuracy_list = list()
-    # accuracy_test = 0
-    #
-    # for epoch in range(1, 100 + 1):
-    #     loss, accuracy = train(epoch, model, train_loader, optimizer_adam)
-    #     train_loss_list.append(loss)
-    #     train_accuracy_list.append(accuracy)
-    #     valid_loss, valid_accuracy = valid(model, valid_loader)
-    #     valid_loss_list.append(valid_loss)
-    #     valid_accuracy_list.append(valid_accuracy)
-    #
-    #     accuracy_test = test_orig(model, orig_test_loader, accuracy_test)
-    # print('\nBiggest accuracy of test: {}\n'.format(accuracy_test))
-    # torch.save(model.state_dict(), 'weights_only.pth')
-    model.load_state_dict(torch.load('weights_only_4499.pth'))
+
+    for epoch in range(1, 100 + 1):
+        loss, accuracy = train(epoch, model, train_loader, optimizer_adam)
+        train_loss_list.append(loss)
+        train_accuracy_list.append(accuracy)
+        valid_loss, valid_accuracy = valid(model, valid_loader)
+        valid_loss_list.append(valid_loss)
+        valid_accuracy_list.append(valid_accuracy)
+
     prediction = test(model, test_loader)
-
-    draw_loss(train_loss_list, valid_loss_list)
-    draw_accuracy(train_accuracy_list, valid_accuracy_list)
-
+    # draw_loss(train_loss_list, valid_loss_list)
+    # draw_accuracy(train_accuracy_list, valid_accuracy_list)
     write_to_file(prediction)
-    check_test()
 
 def train(epoch, model, train_loader, optimizer):
     model.train()
@@ -366,9 +340,9 @@ def train(epoch, model, train_loader, optimizer):
         accuracy_counter += prediction.eq(labels.view_as(prediction)).cpu().sum()
 
     losses /= (len(train_loader) * 64)
-    print('\nEpoch: {}, Train Set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(epoch,
-        losses, accuracy_counter, (len(train_loader) * 64),
-        100. * accuracy_counter / (len(train_loader) * 64)))
+    # print('\nEpoch: {}, Train Set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(epoch,
+    #     losses, accuracy_counter, (len(train_loader) * 64),
+    #     100. * accuracy_counter / (len(train_loader) * 64)))
     accuracy = 100. * accuracy_counter / (len(train_loader) * 64)
     return losses, accuracy
 
@@ -383,9 +357,9 @@ def valid(model, valid_loader):
             pred = output.max(1, keepdim=True)[1]
             correct += pred.eq(target.view_as(pred)).cpu().sum()
     valid_loss /= len(valid_loader.dataset)
-    print('\nValid Set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        valid_loss, correct, len(valid_loader.dataset),
-        100. * correct / len(valid_loader.dataset)))
+    # print('\nValid Set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+    #     valid_loss, correct, len(valid_loader.dataset),
+    #     100. * correct / len(valid_loader.dataset)))
     accuracy = 100. * correct / len(valid_loader.dataset)
     return valid_loss, accuracy
 
@@ -398,41 +372,11 @@ def test(model, test_loader):
         test_y_list.append(str(int(predict)))
     return test_y_list
 
-def test_orig(model, test_loader, accuracy_test):
-    prediction_list = []
-    model.eval()
-    test_loss = 0
-    accuracy_counter = 0
-    with torch.no_grad():
-        for data, target in test_loader:
-            output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()
-            prediction = output.max(1, keepdim=True)[1]
-            prediction_list.append(prediction)
-            accuracy_counter += prediction.eq(target.view_as(prediction)).cpu().sum()
-    # if accuracy_test < accuracy_counter:
-    #     accuracy_test = accuracy_counter
-    #     torch.save(model.state_dict(), 'weights_only.pth')
-
-    test_loss /= len(test_loader.dataset)
-    print('\nTest Set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, accuracy_counter, len(test_loader.dataset), 100. * accuracy_counter / len(test_loader.dataset)))
-    # return accuracy_test
-
 def write_to_file(predict_y):
     with open('test_y', 'w') as file:
         for y in predict_y:
             file.write("%s\n" % y)
     file.close()
-
-def check_test():
-    my_y = np.loadtxt("./test_y", dtype="int64")
-    true_y = np.loadtxt("./test_labels.txt", dtype="int64")
-    array = np.where(my_y == true_y)
-    accuracy_counter = len(array[0])
-    print('\nTest Set: Accuracy: {}/{} ({:.0f}%)\n'.format(
-        accuracy_counter, (len(my_y)),
-        100. * accuracy_counter / (len(my_y))))
 
 def draw_loss(train_loss_values, valid_loss_values):
     epochs = range(1, len(train_loss_values) + 1)
