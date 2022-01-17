@@ -113,10 +113,6 @@ def valid(model, valid_loader, criterion):
             valid_loss = criterion(output, labels)
             losses += valid_loss.item()
 
-            # print('Accuracy of the network on the 10000 test images: %d %%' % (100 * correct / total))
-            # with torch.no_grad():
-            #     for data, target in valid_loader:
-            #         output = model(data)
             pred = output.max(1, keepdim=True)[1]
             correct += pred.eq(labels.view_as(pred)).cpu().sum()
     losses /= len(valid_loader)
